@@ -67,8 +67,11 @@ io.on("connection", socket=>{
 
     const r=room();
     socket.data.roomId=r.id;
-    r.players.set(socket.id,{id,name:p.name,x:400+Math.random()*600,y:260+Math.random()*300,angle:0,hp:100,score:0});
+    const spawn = {id, name:p.name, x:400+Math.random()*600, y:260+Math.random()*300, angle:0, hp:100, score:0};
+    r.players.set(socket.id,spawn);
     socket.join(r.id);
+    // Send the authoritative initial spawn to the joining client.
+    socket.emit("spawn",spawn);
     socket.emit("room",{id:r.id});
     io.to(r.id).emit("players", [...r.players.values()]);
     io.to(r.id).emit("system","Jugador "+p.name+" entró en la partida.");

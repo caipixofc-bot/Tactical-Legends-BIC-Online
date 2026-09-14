@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Tactical Legends — BIC Online</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fdfcf8;color:#102a72;font-family:Arial,Helvetica,sans-serif}
+body{touch-action:none}
+#game{position:fixed;inset:0;width:100%;height:100%;background:#fdfcf8}
+canvas{display:block;width:100%;height:100%}
+.ui{position:fixed;inset:0;pointer-events:none}
+.panel{position:absolute;background:rgba(253,252,248,.9);border:3px solid #12377f;border-radius:12px;box-shadow:0 2px 0 rgba(18,55,127,.15);padding:9px 12px}
+#brand{left:14px;top:12px;font-weight:900;font-size:22px;line-height:1.0;letter-spacing:1px;transform:rotate(-1deg)}
+#top{left:50%;top:12px;transform:translateX(-50%);display:flex;gap:7px;align-items:center;font-weight:900}
+.score{font-size:26px;padding:5px 15px;border:3px solid #12377f}
+#profile{right:14px;top:12px;width:190px}
+.small{font-size:12px;letter-spacing:.6px}
+.bar{height:9px;border:2px solid #12377f;margin-top:4px;position:relative}
+.bar i{display:block;height:100%;width:70%;background:#12377f}
+#players{left:14px;top:105px;width:220px}
+.row{display:flex;align-items:center;gap:7px;margin:5px 0;font-weight:800;font-size:13px}
+.hp{height:6px;border:1px solid #12377f;flex:1}.hp i{display:block;height:100%;background:#12377f}
+#map{right:14px;top:105px;width:165px;height:145px;padding:7px}
+#chat{left:14px;bottom:92px;width:300px;height:170px;display:flex;flex-direction:column}
+#messages{overflow:auto;flex:1;font-size:13px;line-height:1.3}
+.msg b{font-weight:900}
+#chatbar{display:flex;gap:5px;pointer-events:auto}
+#chatbar input{width:100%;border:2px solid #12377f;border-radius:7px;padding:8px;background:#fff;font-weight:700;color:#102a72}
+#chatbar button{border:2px solid #12377f;background:#fff;border-radius:7px;font-weight:900;color:#102a72}
+#joy{left:22px;bottom:18px;width:150px;height:150px;border:3px solid #12377f;border-radius:50%;pointer-events:auto;background:rgba(18,55,127,.03)}
+#knob{position:absolute;width:62px;height:62px;border:3px solid #12377f;border-radius:50%;left:41px;top:41px;background:rgba(18,55,127,.08)}
+.action{position:absolute;border:3px solid #12377f;border-radius:50%;background:#fff;color:#102a72;font-weight:900;pointer-events:auto;display:flex;align-items:center;justify-content:center;user-select:none}
+#fire{right:24px;bottom:42px;width:120px;height:120px;font-size:18px}
+#reload{right:150px;bottom:150px;width:70px;height:70px;font-size:12px}
+#aim{right:55px;bottom:180px;width:74px;height:74px;font-size:12px}
+#dash{right:240px;bottom:150px;width:70px;height:70px;font-size:12px}
+#login{position:fixed;inset:0;background:#fdfcf8;display:flex;align-items:center;justify-content:center;z-index:20}
+#loginbox{width:min(92vw,420px);border:4px solid #12377f;border-radius:16px;padding:25px;box-shadow:7px 7px 0 rgba(18,55,127,.12);transform:rotate(-.5deg)}
+#loginbox h1{font-size:32px;margin:0 0 5px}.ink{font-family:"Comic Sans MS","Bradley Hand",cursive}
+#loginbox p{margin:8px 0 20px;font-weight:700}
+#name{width:100%;padding:14px;border:3px solid #12377f;border-radius:8px;font-size:18px;font-weight:800}
+#start{margin-top:12px;width:100%;padding:14px;border:3px solid #12377f;background:#fff;border-radius:8px;font-size:18px;font-weight:900;color:#102a72}
+#hint{margin-top:15px;font-size:12px;line-height:1.35}
+@media(max-width:650px){
+ #brand{font-size:15px}.panel{border-width:2px;padding:7px 9px}
+ #profile{width:135px}.score{font-size:18px;padding:4px 9px}
+ #players{top:82px;width:155px}.row{font-size:10px}
+ #map{top:82px;width:125px;height:110px}
+ #chat{width:230px;height:135px;bottom:82px}
+ #joy{width:130px;height:130px}.knob{width:54px;height:54px}
+ #fire{width:100px;height:100px}.small{font-size:9px}
+}
+</style>
+</head>
+<body>
+<div id="game"><canvas id="c"></canvas></div>
+<div class="ui">
+  <div id="brand" class="panel ink">TACTICAL<br>LEGENDS</div>
+  <div id="top"><div class="score">2</div><div class="panel" style="position:static;text-align:center">01:24<br><span class="small">ROUND 4/7</span></div><div class="score">1</div></div>
+  <div id="profile" class="panel"><b id="pname">PLAYER</b><br><span class="small">LEVEL <span id="lvl">1</span> · <span id="xp">0</span> XP</span><div class="bar"><i id="xpbar"></i></div><span class="small">K <span id="kills">0</span> · W <span id="wins">0</span></span></div>
+  <div id="players" class="panel"><b>SQUAD / MATCH</b><div id="plist"></div></div>
+  <div id="map" class="panel"><canvas id="mini" width="145" height="120"></canvas><div class="small" style="text-align:center">ZONA A</div></div>
+  <div id="chat" class="panel"><b>CHAT ONLINE</b><div id="messages"></div><div id="chatbar"><input id="chatinput" maxlength="180" placeholder="Escribe..."><button id="send">➤</button></div></div>
+  <div id="joy"><div id="knob"></div></div>
+  <div id="fire" class="action">FUEGO</div><div id="reload" class="action">RECARGA</div><div id="aim" class="action">AIM</div><div id="dash" class="action">DASH</div>
+</div>
+<div id="login"><div id="loginbox"><h1 class="ink">TACTICAL LEGENDS</h1><p>Online · dibujado a boli BIC · shooter móvil</p><input id="name" maxlength="18" placeholder="Tu nombre"><button id="start">ENTRAR EN LA PARTIDA</button><div id="hint">Tu nivel, XP, bajas, muertes y victorias se guardan en el servidor. El chat es en tiempo real.</div></div></div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d'),mini=document.getElementById('mini'),mx=mini.getContext('2d');
+let W=innerWidth,H=innerHeight,dpr=Math.min(devicePixelRatio||1,2);
+function resize(){W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)} addEventListener('resize',resize);resize();
+
+const world={w:1600,h:950};
+const walls=[
+{x:80,y:170,w:290,h:55},{x:430,y:120,w:260,h:55},{x:760,y:180,w:300,h:55},{x:1130,y:120,w:300,h:55},
+{x:170,y:290,w:55,h:250},{x:370,y:300,w:180,h:45},{x:660,y:300,w:50,h:260},{x:820,y:330,w:240,h:45},
+{x:1160,y:290,w:55,h:280},{x:1320,y:360,w:180,h:45},{x:260,y:650,w:300,h:55},{x:650,y:610,w:240,h:55},
+{x:1010,y:650,w:320,h:55},{x:1120,y:760,w:55,h:130},{x:430,y:770,w:55,h:120}
+];
+const crates=[{x:90,y:570,w:120,h:75},{x:560,y:430,w:100,h:70},{x:900,y:510,w:115,h:70},{x:1390,y:570,w:105,h:75},{x:720,y:770,w:100,h:65}];
+let me={id:null,x:800,y:500,angle:0,hp:100,score:0},players=new Map(),profile=null;
+let keys={up:0,down:0,left:0,right:0},joy={x:0,y:0},firing=false,ammo=30;
+const socket=io();
+
+function inkLine(x1,y1,x2,y2,w=2){ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+function drawWorld(){
+ ctx.fillStyle='#fdfcf8';ctx.fillRect(0,0,W,H);
+ const scale=Math.min(W/world.w,H/world.h),ox=(W-world.w*scale)/2,oy=(H-world.h*scale)/2;
+ ctx.save();ctx.translate(ox,oy);ctx.scale(scale,scale);
+ ctx.strokeStyle='#163b82';ctx.fillStyle='#fdfcf8';
+ // paper grid / hand-drawn texture
+ ctx.globalAlpha=.12; for(let x=0;x<world.w;x+=50)inkLine(x,0,x,world.h,1);for(let y=0;y<world.h;y+=50)inkLine(0,y,world.w,y,1);ctx.globalAlpha=1;
+ // roads
+ ctx.lineWidth=90;ctx.beginPath();ctx.moveTo(0,600);ctx.lineTo(world.w,600);ctx.strokeStyle='rgba(22,59,130,.06)';ctx.stroke();
+ ctx.strokeStyle='#163b82';
+ for(const b of walls){ctx.fillStyle='#fff';ctx.lineWidth=3;ctx.fillRect(b.x,b.y,b.w,b.h);ctx.strokeRect(b.x,b.y,b.w,b.h);ctx.globalAlpha=.28;for(let i=0;i<b.w;i+=18)inkLine(b.x+i,b.y,b.x+i+25,b.y+b.h,1);ctx.globalAlpha=1}
+ for(const q of crates){ctx.fillStyle='#fff';ctx.lineWidth=3;ctx.fillRect(q.x,q.y,q.w,q.h);ctx.strokeRect(q.x,q.y,q.w,q.h);inkLine(q.x,q.y,q.x+q.w,q.y+q.h,2);inkLine(q.x+q.w,q.y,q.x,q.y+q.h,2)}
+ // tower
+ ctx.beginPath();ctx.rect(1180,410,105,180);ctx.stroke();ctx.beginPath();ctx.moveTo(1170,410);ctx.lineTo(1232,350);ctx.lineTo(1295,410);ctx.stroke();ctx.beginPath();ctx.rect(1205,445,55,45);ctx.stroke();
+ // arch
+ ctx.beginPath();ctx.moveTo(600,300);ctx.lineTo(600,390);ctx.quadraticCurveTo(625,425,650,390);ctx.lineTo(650,300);ctx.stroke();
+ // palm
+ ctx.lineWidth=4;inkLine(1080,490,1110,370,4);for(let a=-1.2;a<=1.2;a+=.4){ctx.beginPath();ctx.moveTo(1110,375);ctx.quadraticCurveTo(1110+Math.cos(a)*90,350+Math.sin(a)*50,1110+Math.cos(a)*125,375+Math.sin(a)*75);ctx.stroke()}
+ // zone A
+ ctx.beginPath();ctx.arc(800,500,130,0,Math.PI*2);ctx.setLineDash([8,8]);ctx.lineWidth=3;ctx.stroke();ctx.setLineDash([]);ctx.font='bold 42px Arial';ctx.fillText('A',782,515);
+ ctx.restore();
+ return {scale,ox,oy};
+}
+function screenPos(x,y,t){return [t.ox+x*t.scale,t.oy+y*t.scale]}
+function drawPlayer(p,local=false,t){
+ const [sx,sy]=screenPos(p.x,p.y,t),s=t.scale;
+ ctx.save();ctx.translate(sx,sy);ctx.rotate(p.angle||0);
+ ctx.strokeStyle='#102f70';ctx.fillStyle='#fff';ctx.lineWidth=3;
+ ctx.beginPath();ctx.arc(0,0,18*s,0,Math.PI*2);ctx.fill();ctx.stroke();
+ ctx.beginPath();ctx.arc(0,-24*s,9*s,0,Math.PI*2);ctx.fill();ctx.stroke();
+ ctx.fillStyle='#163b82';ctx.fillRect(-9*s,-10*s,18*s,20*s);
+ ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(4*s,-2*s);ctx.lineTo(36*s,-2*s);ctx.stroke();
+ ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(36*s,-5*s);ctx.lineTo(47*s,-5*s);ctx.lineTo(47*s,2*s);ctx.lineTo(36*s,2*s);ctx.stroke();
+ ctx.restore();
+ ctx.fillStyle='#163b82';ctx.font='bold 12px Arial';ctx.textAlign='center';ctx.fillText((local?'TÚ · ':'')+p.name,sx,sy-32);
+ ctx.fillStyle='#fff';ctx.strokeStyle='#163b82';ctx.lineWidth=2;ctx.fillRect(sx-25,sy-44,50,6);ctx.strokeRect(sx-25,sy-44,50,6);ctx.fillStyle='#163b82';ctx.fillRect(sx-25,sy-44,50*(p.hp/100),6);
+}
+function draw(){
+ const t=drawWorld();
+ for(const p of players.values()) if(p.id!==me.id) drawPlayer(p,false,t);
+ drawPlayer({...me,name:profile?.name||'TÚ'},true,t);
+ mx.clearRect(0,0,145,120);mx.strokeStyle='#163b82';mx.lineWidth=2;mx.strokeRect(1,1,143,118);
+ const sx=145/world.w,sy=120/world.h;
+ for(const p of players.values()){mx.beginPath();mx.arc(p.x*sx,p.y*sy,3,0,Math.PI*2);mx.stroke();if(p.id===me.id){mx.fillStyle='#163b82';mx.fill()}}
+ requestAnimationFrame(draw);
+}
+draw();
+
+function updateMove(){
+ const speed=3.2; let dx=joy.x+keys.right-keys.left,dy=joy.y+keys.down-keys.up;
+ const len=Math.hypot(dx,dy);if(len>1){dx/=len;dy/=len}
+ me.x=Math.max(35,Math.min(world.w-35,me.x+dx*speed));
+ me.y=Math.max(145,Math.min(world.h-30,me.y+dy*speed));
+ if(dx||dy) me.angle=Math.atan2(dy,dx);
+ socket.emit('state',me);
+ requestAnimationFrame(updateMove);
+}
+updateMove();
+
+function nearestTarget(){
+ let best=null,bd=1e9;
+ for(const p of players.values()){if(p.id===me.id||p.hp<=0)continue;const dx=p.x-me.x,dy=p.y-me.y,d=Math.hypot(dx,dy);if(d<bd&&d<330){best=p;bd=d}}
+ return best;
+}
+function shoot(){if(ammo<=0)return;ammo--;const p=nearestTarget();if(p)socket.emit('shoot',{targetId:p.id});}
+setInterval(()=>{if(firing)shoot()},150);
+
+socket.on('profile',p=>{profile=p;document.getElementById('pname').textContent=p.name;renderProfile()});
+socket.on('players',arr=>{players.clear();arr.forEach(p=>players.set(p.id,p));renderPlayers()});
+socket.on('playerState',p=>{if(p.id!==me.id)players.set(p.id,p)});
+socket.on('hit',h=>{if(h.target===me.id)me.hp=h.hp;const p=players.get(h.target);if(p)p.hp=h.hp});
+socket.on('elimination',e=>addMsg('SISTEMA',e.killer+' eliminó a '+e.victim));
+socket.on('chat',m=>addMsg(m.name,m.text));
+socket.on('system',m=>addMsg('SISTEMA',m));
+
+function renderProfile(){if(!profile)return;lvl.textContent=profile.level;xp.textContent=profile.xp;kills.textContent=profile.kills;wins.textContent=profile.wins;xpbar.style.width=Math.max(5,profile.xp/(profile.level*100)*100)+'%'}
+function renderPlayers(){plist.innerHTML='';for(const p of players.values()){const d=document.createElement('div');d.className='row';d.innerHTML='<span>◆</span><span style="min-width:60px">'+p.name+'</span><div class="hp"><i style="width:'+p.hp+'%"></i></div>';plist.appendChild(d)}}
+function addMsg(n,t){const d=document.createElement('div');d.className='msg';d.innerHTML='<b>'+esc(n)+':</b> '+esc(t);messages.appendChild(d);messages.scrollTop=messages.scrollHeight}
+function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
+send.onclick=()=>{if(chatinput.value.trim()){socket.emit('chat',chatinput.value);chatinput.value='';chatinput.focus()}}
+chatinput.onkeydown=e=>{if(e.key==='Enter')send.click()};
+
+function bindButton(el,down,up=()=>{}){el.addEventListener('pointerdown',e=>{e.preventDefault();el.setPointerCapture(e.pointerId);down()});el.addEventListener('pointerup',e=>{e.preventDefault();up()});el.addEventListener('pointercancel',up)}
+bindButton(fire,()=>firing=true,()=>firing=false);
+reload.addEventListener('pointerdown',()=>{ammo=30});
+aim.addEventListener('pointerdown',()=>{const p=nearestTarget();if(p)me.angle=Math.atan2(p.y-me.y,p.x-me.x)});
+dash.addEventListener('pointerdown',()=>{me.x=Math.max(35,Math.min(world.w-35,me.x+Math.cos(me.angle)*85));me.y=Math.max(145,Math.min(world.h-30,me.y+Math.sin(me.angle)*85))});
+
+let joyActive=false;
+joy.addEventListener('pointerdown',e=>{joyActive=true;joy.setPointerCapture(e.pointerId);moveJoy(e)});
+joy.addEventListener('pointermove',e=>{if(joyActive)moveJoy(e)});
+joy.addEventListener('pointerup',()=>{joyActive=false;joy.x=joy.y=0;knob.style.left='41px';knob.style.top='41px'});
+function moveJoy(e){const r=joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let x=e.clientX-cx,y=e.clientY-cy,m=r.width*.38;const l=Math.hypot(x,y);if(l>m){x=x/l*m;y=y/l*m}joy.x=x/m;joy.y=y/m;knob.style.left=(r.width/2-31+x)+'px';knob.style.top=(r.height/2-31+y)+'px'}
+
+start.onclick=()=>{const n=name.value.trim()||'Player';let id=localStorage.getItem('tl_id');if(!id){id=crypto.randomUUID();localStorage.setItem('tl_id',id)};socket.emit('login',{id,name:n});login.style.display='none'};
+</script>
+</body>
+</html>
